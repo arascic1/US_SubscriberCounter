@@ -1,0 +1,20 @@
+Dobavljati preko linka. Svi su linkovi u formatu https://www.youtube.com/
+Nakon ovoga može biti ili channel ili user. U sluèaju da je channel nastavak iza channel u linku se šalje
+metodi koja dohvaæa informacije o kanalu putem Id kanala. Ako bude user onda se prosljeðuje metodi koja
+dohvaæa podatke o kanalu na osnovu imena kanala.
+
+Dakle ili https://www.youtube.com/channel/UCl2J-Po9njn76sXVLdvvSwg
+      ili https://www.youtube.com/user/PewDiePie
+
+
+Link onda izgleda:
+
+ZA USERNAME:
+
+GET https://youtube.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics&forUsername=EmisijeRTVojvodine&key=[YOUR_API_KEY]
+
+ZA CHANNEL ID:
+
+GET https://youtube.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics&id=UCQsPK0DDJd23b_SUCWnO-mA&key=[YOUR_API_KEY] 
+
+
