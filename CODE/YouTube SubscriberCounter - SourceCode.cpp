@@ -9,6 +9,8 @@
 #include "MQTTmbed.h"
 #include "MQTTClient.h"
 #include <string.h>
+#include <vector>
+#include <string>
 
 #include "stm32f413h_discovery_ts.h"
 #include "stm32f413h_discovery_lcd.h"
@@ -20,11 +22,7 @@ int usernameLength = 0;
 char *channelLink;
 char *option;
 char *channelUsername;
-char **channelsNames;
-char **channelsSubscribers;
-char **channelsViews;
-char **channelsVideos;
-char **channelsCountries;
+std::vector<std::string> channelsNames;
 
 void getDefaultValues(){
     BSP_LCD_Clear(LCD_COLOR_WHITE);
@@ -35,13 +33,18 @@ void getDefaultValues(){
 }
 
 void drawChannelNameBanner(){
+    /*channelsNames.push_back("Dnevnjak");
+    channelsNames.push_back("MrBeast");
+    int n = channelsNames[1].length();
+    char pom[n];
+    strcpy(pom, channelsNames[1].c_str());*/
     BSP_LCD_FillRect(0, 50, BSP_LCD_GetXSize(), 40);
     BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
     BSP_LCD_SetBackColor(LCD_COLOR_BLACK);
     BSP_LCD_SetFont(&Font12);
     BSP_LCD_DisplayStringAt(0, 65, (uint8_t *)"Channel: ", LEFT_MODE);
     BSP_LCD_SetFont(&Font16);
-    BSP_LCD_DisplayStringAt(0, 63, (uint8_t *)"Drzavni Posao", RIGHT_MODE);
+    BSP_LCD_DisplayStringAt(0, 63, (uint8_t *)/*pom*/"Drzavni posao", RIGHT_MODE);
 }
 
 void drawYouTubeTriangleLogo(){
