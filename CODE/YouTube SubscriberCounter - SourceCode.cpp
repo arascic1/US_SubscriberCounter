@@ -16,8 +16,10 @@
 TS_StateTypeDef TS_State = { 0 };
 
 int channelCount = 0;
+int usernameLength = 0;
 char *channelLink;
 char *option;
+char *channelUsername;
 char **channelsNames;
 char **channelsSubscribers;
 char **channelsViews;
@@ -98,15 +100,34 @@ void setLCD(){
     drawInstructionBanner();
 }
 
+void findChannelUsername(char *linkYT){
+    char *username = linkYT + 24;
+    usernameLength -= 28;
+    if(username[0] == 'c'){
+        username = username + 8;
+        usernameLength -= 8;
+        printf("ChannelId: %.*s\n", usernameLength, username);
+        //ovdje pozvati funkciju za JSON; bez drugog parametra
+    }
+    else if(username[0] == 'u'){
+        username = username + 5;
+        usernameLength -= 5;
+        printf("Username: %.*s\n", usernameLength, username);
+        //ovdje pozvati funkciju za JSON; drugi parametar = true
+    }
+}
+
 void messageArrived(MQTT::MessageData& md)
 {
     MQTT::Message &message = md.message;
-    printf("Message arrived: qos %d, retained %d, dup %d, packetid %d\r\n", message.qos, message.retained, message.dup, message.id);
     ++channelCount;
     option = (char*)message.payload;
     option[3] = '\n';
     channelLink=(char*)message.payload + 4;
-    printf("Opcija: %.*s\nLink: %.*s\n", 3, option, message.payloadlen, channelLink);
+    usernameLength = message.payloadlen;
+    if(option[0] == 'a'){
+        findChannelUsername(channelLink);
+    }
 }
 
 int main() {
