@@ -17,12 +17,19 @@
 
 TS_StateTypeDef TS_State = { 0 };
 
+DigitalIn button1(p5);
+DigitalIn button2(p6);
+
 int channelCount = 0;
+int currentChannel = 0;
 int usernameLength = 0;
-char *channelLink;
-char *option;
-char *channelUsername;
+char *channelData;
+
 std::vector<std::string> channelsNames;
+std::vector<std::string> channelsSubscribers;
+std::vector<std::string> channelsViews;
+std::vector<std::string> channelsVideos;
+std::vector<std::string> channelsCountries;
 
 void getDefaultValues(){
     BSP_LCD_Clear(LCD_COLOR_WHITE);
@@ -33,18 +40,23 @@ void getDefaultValues(){
 }
 
 void drawChannelNameBanner(){
-    /*channelsNames.push_back("Dnevnjak");
-    channelsNames.push_back("MrBeast");
-    int n = channelsNames[1].length();
+    int n = 0;
+    if(currentChannel > 0)
+        n = channelsNames[currentChannel - 1].length();
+    else
+        n = channelsNames[0].length();
     char pom[n];
-    strcpy(pom, channelsNames[1].c_str());*/
+    if(n != 0)
+        strcpy(pom, channelsNames[currentChannel - 1].c_str());
+    else
+        strcpy(pom, " ");
     BSP_LCD_FillRect(0, 50, BSP_LCD_GetXSize(), 40);
     BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
     BSP_LCD_SetBackColor(LCD_COLOR_BLACK);
     BSP_LCD_SetFont(&Font12);
     BSP_LCD_DisplayStringAt(0, 65, (uint8_t *)"Channel: ", LEFT_MODE);
     BSP_LCD_SetFont(&Font16);
-    BSP_LCD_DisplayStringAt(0, 63, (uint8_t *)/*pom*/"Drzavni posao", RIGHT_MODE);
+    BSP_LCD_DisplayStringAt(0, 63, (uint8_t *)pom, RIGHT_MODE);
 }
 
 void drawYouTubeTriangleLogo(){
@@ -78,11 +90,42 @@ void setChannelInfo(){
     BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
     BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
     BSP_LCD_SetFont(&Font16);
-    BSP_LCD_DisplayStringAt(0, 95, (uint8_t *)"Channel Number: 1", LEFT_MODE);
-    BSP_LCD_DisplayStringAt(0, 115, (uint8_t *)"Subscribers: 318000", LEFT_MODE);
-    BSP_LCD_DisplayStringAt(0, 135, (uint8_t *)"Views: 572214256", LEFT_MODE);
-    BSP_LCD_DisplayStringAt(0, 155, (uint8_t *)"Uploads: 1615", LEFT_MODE);
-    BSP_LCD_DisplayStringAt(0, 175, (uint8_t *)"Country: Serbia", LEFT_MODE);
+
+    char channelNumber[20];
+    if(channelCount != 0)
+        sprintf(channelNumber, "Channel number: %d", currentChannel);
+    else
+        sprintf(channelNumber, "Channel number: ");
+    ////////////////////////////////////////////////////////////////////
+    char subscribers[50];
+    if(channelsSubscribers[0].length() != 0)
+        sprintf(subscribers, "Subscribers: %s", channelsSubscribers[currentChannel - 1].c_str());
+    else
+        sprintf(subscribers, "Subscribers: ");
+    //////////////////////////////////////////////////////////////////
+    char views[50];
+    if(channelsViews[0].length() != 0)
+        sprintf(views, "Views: %s", channelsViews[currentChannel - 1].c_str());
+    else
+        sprintf(views, "Views: ");
+    //////////////////////////////////////////////////////////////////
+    char uploads[20];
+    if(channelsVideos[0].length() != 0)
+        sprintf(uploads, "Uploads: %s", channelsVideos[currentChannel - 1].c_str());
+    else
+        sprintf(uploads, "Uploads: ");
+    /////////////////////////////////////////////////////////////////
+    char country[20];
+    if(channelsCountries[0].length() != 0)
+        sprintf(country, "Country: %s", channelsCountries[currentChannel - 1].c_str());
+    else
+        sprintf(country, "Country: ");
+
+    BSP_LCD_DisplayStringAt(0, 95, (uint8_t *)channelNumber, LEFT_MODE);
+    BSP_LCD_DisplayStringAt(0, 115, (uint8_t *)subscribers, LEFT_MODE);
+    BSP_LCD_DisplayStringAt(0, 135, (uint8_t *)views, LEFT_MODE);
+    BSP_LCD_DisplayStringAt(0, 155, (uint8_t *)uploads, LEFT_MODE);
+    BSP_LCD_DisplayStringAt(0, 175, (uint8_t *)country, LEFT_MODE);
 }
 
 void drawInstructionBanner(){
@@ -103,33 +146,94 @@ void setLCD(){
     drawInstructionBanner();
 }
 
-void findChannelUsername(char *linkYT){
-    char *username = linkYT + 24;
-    usernameLength -= 28;
-    if(username[0] == 'c'){
-        username = username + 8;
-        usernameLength -= 8;
-        printf("ChannelId: %.*s\n", usernameLength, username);
-        //ovdje pozvati funkciju za JSON; bez drugog parametra
-    }
-    else if(username[0] == 'u'){
-        username = username + 5;
-        usernameLength -= 5;
-        printf("Username: %.*s\n", usernameLength, username);
-        //ovdje pozvati funkciju za JSON; drugi parametar = true
-    }
+
+void getChannelUploadsAndPutIntoArray(char *channelInfo) {
+    std::string delimiter = ";";
+    size_t pos = 0;
+    std::string channelInfoString = channelInfo;
+    std::string info;
+
+    pos = channelInfoString.find(delimiter);
+    info = channelInfoString.substr(0, pos);
+    channelsVideos.push_back(info);
+    channelInfoString.erase(0, pos + delimiter.length());
+}
+
+void getChannelSubscribersAndPutIntoArray(char *channelInfo) {
+    std::string delimiter = ";";
+    size_t pos = 0;
+    std::string channelInfoString = channelInfo;
+    std::string info;
+
+    pos = channelInfoString.find(delimiter);
+    info = channelInfoString.substr(0, pos);
+    channelsSubscribers.push_back(info);
+    channelInfoString.erase(0, pos + delimiter.length());
+
+    char *channelData;
+    strcpy(channelData, channelInfoString.c_str());
+    getChannelUploadsAndPutIntoArray(channelData);
+}
+
+void getChannelViewsAndPutIntoArray(char *channelInfo) {
+    std::string delimiter = ";";
+    size_t pos = 0;
+    std::string channelInfoString = channelInfo;
+    std::string info;
+
+    pos = channelInfoString.find(delimiter);
+    info = channelInfoString.substr(0, pos);
+    channelsViews.push_back(info);
+    channelInfoString.erase(0, pos + delimiter.length());
+
+    char *channelData;
+    strcpy(channelData, channelInfoString.c_str());
+    getChannelSubscribersAndPutIntoArray(channelData);
+}
+
+void getChannelCountriesAndPutIntoArray(char *channelInfo) {
+    std::string delimiter = ";";
+    size_t pos = 0;
+    std::string channelInfoString = channelInfo;
+    std::string info;
+
+    pos = channelInfoString.find(delimiter);
+    info = channelInfoString.substr(0, pos);
+    channelsCountries.push_back(info);
+    channelInfoString.erase(0, pos + delimiter.length());
+
+    char *channelData;
+    strcpy(channelData, channelInfoString.c_str());
+    printf("%s", channelData);
+    getChannelViewsAndPutIntoArray(channelData);
+}
+
+void getChannelNameAndPutIntoArray(char *channelInfo) {
+    std::string delimiter = ";";
+    size_t pos = 0;
+    std::string channelInfoString = channelInfo;
+    std::string info;
+
+    pos = channelInfoString.find(delimiter);
+    info = channelInfoString.substr(0, pos);
+    channelsNames.push_back(info);
+    channelInfoString.erase(0, pos + delimiter.length());
+
+    char *channelData;
+    strcpy(channelData, channelInfoString.c_str());
+    printf("%s", channelData);
+    getChannelCountriesAndPutIntoArray(channelData);
 }
 
 void messageArrived(MQTT::MessageData& md)
 {
     MQTT::Message &message = md.message;
     ++channelCount;
-    option = (char*)message.payload;
-    option[3] = '\n';
-    channelLink=(char*)message.payload + 4;
-    usernameLength = message.payloadlen;
-    if(option[0] == 'a'){
-        findChannelUsername(channelLink);
+    if(currentChannel == 0) ++currentChannel;
+    channelData = (char*)message.payload;
+    if(!(channelData[0] >= '0' && channelData[0] <= '9')){
+        getChannelNameAndPutIntoArray(channelData);
+        setLCD();
     }
 }
 
@@ -178,6 +282,18 @@ int main() {
             BSP_TS_GetState(&TS_State);
 
             rc = client.subscribe(TEMAPROJEKAT, MQTT::QOS0, messageArrived);
+
+            if(button2){
+                if(currentChannel < channelsNames.size())
+                    currentChannel++;
+                setLCD();
+            }
+
+            if(button1){
+                if(currentChannel > 1)
+                    currentChannel--;
+                setLCD();
+            }
 
             wait_ms(10);
         }
