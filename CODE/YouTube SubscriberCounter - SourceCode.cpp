@@ -225,6 +225,18 @@ void getChannelNameAndPutIntoArray(char *channelInfo) {
     getChannelCountriesAndPutIntoArray(channelData);
 }
 
+void removeChannel(int channelNumber) {
+    channelCount--;
+    if(currentChannel == channelNumber)
+        currentChannel--;
+    channelsNames.erase(channelsNames.begin() + channelNumber - 1);
+    channelsSubscribers.erase(channelsSubscribers.begin() + channelNumber - 1);
+    channelsVideos.erase(channelsVideos.begin() + channelNumber - 1);
+    channelsViews.erase(channelsViews.begin() + channelNumber - 1);
+    channelsCountries.erase(channelsCountries.begin() + channelNumber - 1);
+    setLCD();
+}
+
 void messageArrived(MQTT::MessageData& md)
 {
     MQTT::Message &message = md.message;
@@ -233,7 +245,14 @@ void messageArrived(MQTT::MessageData& md)
     channelData = (char*)message.payload;
     if(!(channelData[0] >= '0' && channelData[0] <= '9')){
         getChannelNameAndPutIntoArray(channelData);
+        if(channelCount > 1)
+            ++currentChannel;
         setLCD();
+    }
+    else{
+        std::string deleted = channelData;
+        int deletedIndex = stoi(deleted);
+        removeChannel(deletedIndex);
     }
 }
 
