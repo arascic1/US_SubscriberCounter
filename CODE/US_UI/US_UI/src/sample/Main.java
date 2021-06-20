@@ -24,7 +24,7 @@ public class Main extends Application {
         publisher = new MqttClient("tcp://broker.hivemq.com:1883", publisherId);
         MqttConnectOptions options = new MqttConnectOptions();
         options.setAutomaticReconnect(true);
-        options.setCleanSession(true);
+        //options.setCleanSession(true);
         options.setConnectionTimeout(10);
         publisher.connect(options);
 

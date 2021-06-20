@@ -14,7 +14,7 @@ public class Controller {
     public TextField txt;
     public Label msg;
     private APIHandler handler = new APIHandler();
-    private String topic = "ugradbeni/projekat/youtube";
+    private String topic = "ugradbeni/projekat/youtubesub";
 
     private void displayErrorMsg(String msg) {
         Alert errorAlert = new Alert(Alert.AlertType.ERROR);
@@ -78,7 +78,7 @@ public class Controller {
 
     private void emitujMqttMsg(MqttMessage msg) {
         msg.setQos(0);
-        msg.setRetained(true);
+        //msg.setRetained(true);
         try {
             Main.publisher.publish(topic, msg);
         } catch (MqttException e) {
