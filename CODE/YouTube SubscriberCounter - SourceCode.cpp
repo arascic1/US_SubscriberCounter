@@ -1,4 +1,4 @@
-#define TEMAPROJEKAT "ugradbeni/projekat/youtube"
+#define TEMAPROJEKAT "ugradbeni/projekat/youtubesub"
 
 #include "mbed.h"
 
@@ -11,6 +11,7 @@
 #include <string.h>
 #include <vector>
 #include <string>
+#include <algorithm>
 
 #include "stm32f413h_discovery_ts.h"
 #include "stm32f413h_discovery_lcd.h"
@@ -44,9 +45,9 @@ void drawChannelNameBanner(){
     if(currentChannel > 0)
         n = channelsNames[currentChannel - 1].length();
     else
-        n = channelsNames[0].length();
+        n = 0;
     char pom[n];
-    if(n != 0)
+    if(n > 0)
         strcpy(pom, channelsNames[currentChannel - 1].c_str());
     else
         strcpy(pom, " ");
@@ -91,37 +92,37 @@ void setChannelInfo(){
     BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
     BSP_LCD_SetFont(&Font16);
 
-    char channelNumber[20];
+    char channelNumbers[20];
     if(channelCount != 0)
-        sprintf(channelNumber, "Channel number: %d", currentChannel);
+        sprintf(channelNumbers, "Channel number: %d", currentChannel);
     else
-        sprintf(channelNumber, "Channel number: ");
-    ////////////////////////////////////////////////////////////////////
+        sprintf(channelNumbers, "Channel number: ");
+
     char subscribers[50];
-    if(channelsSubscribers[0].length() != 0)
+    if(channelsSubscribers.size() > 0 && channelsSubscribers[0].length() != 0)
         sprintf(subscribers, "Subscribers: %s", channelsSubscribers[currentChannel - 1].c_str());
     else
         sprintf(subscribers, "Subscribers: ");
-    //////////////////////////////////////////////////////////////////
+
     char views[50];
-    if(channelsViews[0].length() != 0)
+    if(channelsViews.size() > 0 && channelsViews[0].length() != 0)
         sprintf(views, "Views: %s", channelsViews[currentChannel - 1].c_str());
     else
         sprintf(views, "Views: ");
-    //////////////////////////////////////////////////////////////////
+
     char uploads[20];
-    if(channelsVideos[0].length() != 0)
+    if(channelsVideos.size() > 0 && channelsVideos[0].length() != 0)
         sprintf(uploads, "Uploads: %s", channelsVideos[currentChannel - 1].c_str());
     else
         sprintf(uploads, "Uploads: ");
-    /////////////////////////////////////////////////////////////////
+
     char country[20];
-    if(channelsCountries[0].length() != 0)
+    if(channelsCountries.size() > 0 && channelsCountries[0].length() != 0)
         sprintf(country, "Country: %s", channelsCountries[currentChannel - 1].c_str());
     else
         sprintf(country, "Country: ");
 
-    BSP_LCD_DisplayStringAt(0, 95, (uint8_t *)channelNumber, LEFT_MODE);
+    BSP_LCD_DisplayStringAt(0, 95, (uint8_t *)channelNumbers, LEFT_MODE);
     BSP_LCD_DisplayStringAt(0, 115, (uint8_t *)subscribers, LEFT_MODE);
     BSP_LCD_DisplayStringAt(0, 135, (uint8_t *)views, LEFT_MODE);
     BSP_LCD_DisplayStringAt(0, 155, (uint8_t *)uploads, LEFT_MODE);
@@ -144,8 +145,8 @@ void setLCD(){
     drawChannelNameBanner();
     setChannelInfo();
     drawInstructionBanner();
-}
 
+}
 
 void getChannelUploadsAndPutIntoArray(char *channelInfo) {
     std::string delimiter = ";";
@@ -208,7 +209,7 @@ void getChannelCountriesAndPutIntoArray(char *channelInfo) {
     getChannelViewsAndPutIntoArray(channelData);
 }
 
-void getChannelNameAndPutIntoArray(char *channelInfo) {
+bool getChannelNameAndPutIntoArray(char *channelInfo) {
     std::string delimiter = ";";
     size_t pos = 0;
     std::string channelInfoString = channelInfo;
@@ -216,40 +217,46 @@ void getChannelNameAndPutIntoArray(char *channelInfo) {
 
     pos = channelInfoString.find(delimiter);
     info = channelInfoString.substr(0, pos);
-    channelsNames.push_back(info);
-    channelInfoString.erase(0, pos + delimiter.length());
+    if(std::find(channelsNames.begin(), channelsNames.end(), info) == channelsNames.end()){
+        channelsNames.push_back(info);
+        channelInfoString.erase(0, pos + delimiter.length());
 
-    char *channelData;
-    strcpy(channelData, channelInfoString.c_str());
-    printf("%s", channelData);
-    getChannelCountriesAndPutIntoArray(channelData);
+        char *channelData;
+        strcpy(channelData, channelInfoString.c_str());
+        printf("%s", channelData);
+        getChannelCountriesAndPutIntoArray(channelData);
+
+        return true;
+    }
+    return false;
 }
 
 void removeChannel(int channelNumber) {
-    channelCount--;
-    if(currentChannel == channelNumber)
-        currentChannel--;
-    channelsNames.erase(channelsNames.begin() + channelNumber - 1);
-    channelsSubscribers.erase(channelsSubscribers.begin() + channelNumber - 1);
-    channelsVideos.erase(channelsVideos.begin() + channelNumber - 1);
-    channelsViews.erase(channelsViews.begin() + channelNumber - 1);
-    channelsCountries.erase(channelsCountries.begin() + channelNumber - 1);
-    setLCD();
+        channelCount--;
+        if(currentChannel >= channelNumber && (currentChannel > 1 || (currentChannel == 1 && channelsNames.size() == 1)))
+            currentChannel--;
+        channelsNames.erase(channelsNames.begin() + channelNumber - 1);
+        channelsSubscribers.erase(channelsSubscribers.begin() + channelNumber - 1);
+        channelsVideos.erase(channelsVideos.begin() + channelNumber - 1);
+        channelsViews.erase(channelsViews.begin() + channelNumber - 1);
+        channelsCountries.erase(channelsCountries.begin() + channelNumber - 1);
+        setLCD();
 }
 
 void messageArrived(MQTT::MessageData& md)
 {
     MQTT::Message &message = md.message;
-    ++channelCount;
-    if(currentChannel == 0) ++currentChannel;
     channelData = (char*)message.payload;
     if(!(channelData[0] >= '0' && channelData[0] <= '9')){
-        getChannelNameAndPutIntoArray(channelData);
-        if(channelCount > 1)
-            ++currentChannel;
-        setLCD();
+        if(getChannelNameAndPutIntoArray(channelData)){
+            channelCount++;
+            if(currentChannel == 0) currentChannel++;
+            if(channelCount > 1)
+                currentChannel++;
+            setLCD();
+        }
     }
-    else{
+    else if(channelsNames.size() > 0 && channelData[0] >= '0' && channelData[0] <= '9'){
         std::string deleted = channelData;
         int deletedIndex = stoi(deleted);
         removeChannel(deletedIndex);
@@ -290,9 +297,6 @@ int main() {
     if ((rc = client.connect(data)) != 0)
         printf("rc from MQTT connect is %d\r\n", rc);
 
-    if ((rc = client.subscribe(TEMAPROJEKAT, MQTT::QOS2, messageArrived)) != 0)
-        printf("rc from MQTT subscribe is %d\r\n", rc);
-
     MQTT::Message message;
 
     char buf[100];
@@ -313,6 +317,8 @@ int main() {
                     currentChannel--;
                 setLCD();
             }
+
+            //printf("%d - %d\n", channelCount, currentChannel);
 
             wait_ms(10);
         }
