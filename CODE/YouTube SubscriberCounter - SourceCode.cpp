@@ -135,8 +135,8 @@ void drawInstructionBanner(){
     BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
     BSP_LCD_SetBackColor(LCD_COLOR_BLACK);
     BSP_LCD_SetFont(&Font12);
-    BSP_LCD_DisplayStringAt(0, 205, (uint8_t *)"Button 1: Next Channel", LEFT_MODE);
-    BSP_LCD_DisplayStringAt(0, 220, (uint8_t *)"Button 2: Previous Channel", LEFT_MODE);
+    BSP_LCD_DisplayStringAt(0, 205, (uint8_t *)"Button 1 (right): Next Channel", LEFT_MODE);
+    BSP_LCD_DisplayStringAt(0, 220, (uint8_t *)"Button 2 (left): Previous Channel", LEFT_MODE);
 }
 
 void setLCD(){
@@ -233,8 +233,11 @@ bool getChannelNameAndPutIntoArray(char *channelInfo) {
 
 void removeChannel(int channelNumber) {
         channelCount--;
+
+        //If current channel on LCD is the first one and not the last remaining, currentChannel counter will not decrease
         if(currentChannel >= channelNumber && (currentChannel > 1 || (currentChannel == 1 && channelsNames.size() == 1)))
             currentChannel--;
+
         channelsNames.erase(channelsNames.begin() + channelNumber - 1);
         channelsSubscribers.erase(channelsSubscribers.begin() + channelNumber - 1);
         channelsVideos.erase(channelsVideos.begin() + channelNumber - 1);
